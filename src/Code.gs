@@ -3,7 +3,11 @@
  * across the full date range of the year, and cross-checking missed assignments
  * with manually overridden assignments.
  * 
- * Designed to work with Google Sheets and Google Apps Script
+ * Designed to work with Google Sheets and Google Apps Scripts.
+ * 
+ * *** NOTE ***
+ * When running, please make sure that the "checkDates" function is listed as the target.
+ * If this is not set, there can be unexpected behavior.
  * 
  * @version 2026-02-11
  * @author Rahul Dhodapkar
@@ -218,6 +222,10 @@ function diffStaffingSummary(expected, actual) {
   return [diffNum, diffNames]  
 }
 
+function cloneDate(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // RUN LOGIC
@@ -227,18 +235,18 @@ function checkDates() {
 
   // template for clinic blocking
   blockOut = [
-    ["Date", "AM/PM", "ClinicToBlock", "Expected/Actual"]
+    ["Date", "AM/PM", "ClinicToBlock", "Expected - Actual", "Diff Summary"]
   ]
 
   scheduleDataOut = [
     ["Date", "AM/PM", "Resident", "Clinic", "isOverride"]
   ]
 
-  var startDate = new Date("2026-08-19");
-  var endDate   = new Date("2026-08-21");
+  var startDate = new Date("2026-08-19T00:00:00");
+  var endDate   = new Date("2026-08-21T00:00:00");
 
   for (var d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    Logger.log(new Date(d)); // important: clone if storing
+    Logger.log(cloneDate(d)); // important: clone if storing
 
     ////////////////////////////////////////////////////
     // extract date information
@@ -327,13 +335,20 @@ function checkDates() {
       if (!residentMissingNames.includes(resNames[i])) {
         residentPresentNames.push(resNames[i])
         residentPresentClinics.push(resNamesMatchedClinics[i])
+
+        scheduleDataOut.push([cloneDate(d), ampm[a], resNames[i], resNamesMatchedClinics[i], 'no'])
       }
     }
 
     // add back override assignments to present residents
     for (var i = 0; i < overrideAssignments.length; i++) {
-      residentPresentNames.push(overrideAssignments[i][OVER_RES_COL])
-      residentPresentClinics.push(overrideAssignments[i][OVER_ASSIGN_COL])
+      var tmpOverrideRes = overrideAssignments[i][OVER_RES_COL]
+      var tmpOverrideClinic = overrideAssignments[i][OVER_ASSIGN_COL]
+
+      residentPresentNames.push(tmpOverrideRes)
+      residentPresentClinics.push(tmpOverrideClinic)
+
+      scheduleDataOut.push([cloneDate(d), ampm[a], tmpOverrideRes, tmpOverrideClinic, 'yes'])
     }
 
     var residentPresentSummary = summarizeResidentStaffing(residentPresentClinics, residentPresentNames)
@@ -343,6 +358,21 @@ function checkDates() {
     Logger.log(diffNum)
     Logger.log("Summary of Differences: ")
     Logger.log(diffNames)
-    
+
+    // Downbooking Required
+    var downbookClinics = Object.keys(diffNum)
+    for (var i = 0; i < downbookClinics.length; i++) {
+      blockOut.push([
+        cloneDate(d), ampm[a], downbookClinics[i], 
+        diffNum[downbookClinics[i]],
+        JSON.stringify(diffNames[downbookClinics[i]])
+      ])
+    }
   }
+
+  // write full adjusted schedule data for later inspection
+  adjustedAssignmentsOutputSheet.getRange(1,1,scheduleDataOut.length, scheduleDataOut[0].length).setValues(scheduleDataOut)
+
+  // write full block requirements data for later inspection
+  blockOutputSheet.getRange(1,1,blockOut.length, blockOut[0].length).setValues(blockOut)
 }
