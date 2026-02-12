@@ -249,8 +249,8 @@ function checkDates() {
     ["Date", "AM/PM", "Resident", "Clinic", "isOverride"]
   ]
 
-  var startDate = new Date("2026-08-19T00:00:00");
-  var endDate   = new Date("2026-08-21T00:00:00");
+  var startDate = new Date("2026-07-01T00:00:00");
+  var endDate   = new Date("2027-06-30T00:00:00");
 
   for (var d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     Logger.log(cloneDate(d)); // important: clone if storing
@@ -275,8 +275,8 @@ function checkDates() {
       var res = dateToResident[dayOfWeek][weekNumOfMonth][month % 2][ampm[a]]
       var clinics = dateToClinic[dayOfWeek][weekNumOfMonth][month % 2][ampm[a]]
       var summary = summarizeResidentStaffing(clinics, res)
-      Logger.log("Templated staffing: ")
-      Logger.log(summary)
+      //Logger.log("Templated staffing: ")
+      //Logger.log(summary)
 
       // Now convert the resident rotations to names
       resNames = []
@@ -296,8 +296,8 @@ function checkDates() {
 
       var expectedResidentStaffing = summarizeResidentStaffing(resNamesMatchedClinics, resNames)
 
-      Logger.log("Expected staffing: ")
-      Logger.log(expectedResidentStaffing)
+      //Logger.log("Expected staffing: ")
+      //Logger.log(expectedResidentStaffing)
 
       // now check vacations and manual override
       residentMissingNames = []
@@ -309,7 +309,7 @@ function checkDates() {
         }
       }
 
-      Logger.log("Residents missing vacation: " + residentMissingNames)
+      //Logger.log("Residents missing vacation: " + residentMissingNames)
 
       var overrideAssignments = getAllOverrideAssignments(d, ampm[a])
       var overrideResidentNames = []
@@ -318,9 +318,9 @@ function checkDates() {
         overrideResidentNames.push(overrideAssignments[i][OVER_RES_COL])
         overrideClinicNames.push(overrideAssignments[i][OVER_ASSIGN_COL])
       }
-      Logger.log("Override assignments: ")
-      Logger.log(overrideAssignments)
-      Logger.log(overrideResidentNames)
+      //Logger.log("Override assignments: ")
+      //Logger.log(overrideAssignments)
+      //Logger.log(overrideResidentNames)
 
       // remove overridden residents
       for (var i = 0; i < resNames.length; i++) {
@@ -330,7 +330,7 @@ function checkDates() {
         }
       }
 
-      Logger.log("Residents missing: " + residentMissingNames)
+      // Logger.log("Residents missing: " + residentMissingNames)
 
       // capture a final list of all residents present and staffing for clinics
       var residentPresentNames = []
@@ -358,10 +358,10 @@ function checkDates() {
       var residentPresentSummary = summarizeResidentStaffing(residentPresentClinics, residentPresentNames)
       var [diffNum, diffNames] = diffStaffingSummary(expectedResidentStaffing, residentPresentSummary)
 
-      Logger.log("Downbooking required : ")
-      Logger.log(diffNum)
-      Logger.log("Summary of Differences: ")
-      Logger.log(diffNames)
+      //Logger.log("Downbooking required : ")
+      //Logger.log(diffNum)
+      //Logger.log("Summary of Differences: ")
+      //Logger.log(diffNames)
 
       // Downbooking Required
       var downbookClinics = Object.keys(diffNum)
