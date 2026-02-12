@@ -259,7 +259,7 @@ function checkDates() {
     // extract date information
     ////////////////////////////////////////////////////
 
-    var month = d.getMonth()
+    var month = d.getMonth() + 1 // ADD 1 for 1-indexing and appropriate even-month calculation
     var dayOfWeek = d.getDay() // returns 0-6 for Sun-Sat
     if (dayOfWeek == 0) { dayOfWeek = 7 } // for compatibility
 
