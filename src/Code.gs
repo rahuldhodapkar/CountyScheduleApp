@@ -141,7 +141,7 @@ function getResidentForRotationAndDate(rotation, date) {
   resToReturn = []
   for (var i = 0; i < residentRotationData.length; i++) {
     if (residentRotationData[i][ROT_ROTATION_COL] != rotation) { continue; }
-    if (new Date(residentRotationData[i][ROT_STARTDATE_COL]) < date 
+    if (new Date(residentRotationData[i][ROT_STARTDATE_COL]) <= date 
         && new Date(residentRotationData[i][ROT_ENDDATE_COL]) >= date) {
           resToReturn.push(residentRotationData[i][ROT_RES_COL])
         }
@@ -249,7 +249,7 @@ function checkDates() {
     ["Date", "AM/PM", "Resident", "Clinic", "isOverride"]
   ]
 
-  var startDate = new Date("2026-07-01T00:00:00");
+  var startDate = new Date("2026-06-30T00:00:00");
   var endDate   = new Date("2027-06-30T00:00:00");
 
   for (var d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
