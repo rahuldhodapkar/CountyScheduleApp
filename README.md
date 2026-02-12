@@ -1,0 +1,3 @@
+# County Scheduling App
+
+Google Sheets Scripts to handle scheduling conflicts and schedule blocking for LA General Ophthalmology. No health information or schedule information is exposed in this repository, only code to manipulate the spreadsheets. This code must be connected to the relevant spreadsheet via the google Apps Script connector to work. This repository serves as a form of version control.
