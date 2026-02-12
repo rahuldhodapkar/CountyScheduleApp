@@ -155,7 +155,7 @@ function getResidentForRotationAndDate(rotation, date) {
 function isResidentOnLeave(residentName, date) {
   for (var i = 0; i < vacationData.length; i++) {
     if (vacationData[i][VAC_RES_COL] != residentName) { continue; }
-    if (new Date(vacationData[i][VAC_START_COL]) < date 
+    if (new Date(vacationData[i][VAC_START_COL]) <= date
         && new Date(vacationData[i][VAC_END_COL]) >= date) {
           return true
         }
