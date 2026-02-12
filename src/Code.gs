@@ -53,8 +53,8 @@ ROT_ENDDATE_COL = 3
 // vacation headers
 VAC_RES_COL = 0
 VAC_PGY_COL = 1
-VAC_START_COL = 2
-VAC_END_COL = 3
+VAC_START_COL = 3
+VAC_END_COL = 4
 
 // override headers
 OVER_RES_COL = 0
@@ -155,7 +155,7 @@ function getResidentForRotationAndDate(rotation, date) {
 function isResidentOnLeave(residentName, date) {
   for (var i = 0; i < vacationData.length; i++) {
     if (vacationData[i][VAC_RES_COL] != residentName) { continue; }
-    if (new Date(vacationData[i][VAC_START_COL]) <= date
+    if (new Date(vacationData[i][VAC_START_COL]) <= date 
         && new Date(vacationData[i][VAC_END_COL]) >= date) {
           return true
         }
