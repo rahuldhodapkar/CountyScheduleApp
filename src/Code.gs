@@ -27,7 +27,10 @@ var overrideData = ss.getSheetByName("Assignment Override DATA").getDataRange().
 
 // *** OUTPUT SHEETS ***
 var blockOutputSheet = ss.getSheetByName("Block Schedule GEN")
+blockOutputSheet.clear() // ***DANGEROUS COMMAND***
+
 var adjustedAssignmentsOutputSheet = ss.getSheetByName("Adjusted Assignments GEN")
+adjustedAssignmentsOutputSheet.clear() // ***DANGEROUS COMMAND***
 
 //////////////////////////////////////////////////////////////////////
 // DEFINE GLOBAL CONSTANTS
@@ -209,7 +212,11 @@ function diffStaffingSummary(expected, actual) {
     var k = expectedClinics[i]
     var expectedNum = expected[k].length
     var actualNum = 0
-    if (k in actual) { actualNum = actual[k].length }
+    if (k in actual) { 
+      actualNum = actual[k].length
+    } else {
+      actual[k] = []
+    }
     if (expectedNum > actualNum) { // if there is not enough staffing
       diffNum[k] = expectedNum - actualNum
       diffNames[k] = {
@@ -263,110 +270,108 @@ function checkDates() {
     // identify clinics on date, resident codes for date
     ////////////////////////////////////////////////////
 
-    var clinicsOnDate = []
     var ampm = ['am', 'pm']
-    var a = 1
+    for (var a = 0; a < ampm.length; a++) {
+      var res = dateToResident[dayOfWeek][weekNumOfMonth][month % 2][ampm[a]]
+      var clinics = dateToClinic[dayOfWeek][weekNumOfMonth][month % 2][ampm[a]]
+      var summary = summarizeResidentStaffing(clinics, res)
+      Logger.log("Templated staffing: ")
+      Logger.log(summary)
 
-    Logger.log("===== AM CLINIC =====")
-    var res = dateToResident[dayOfWeek][weekNumOfMonth][month % 2][ampm[a]]
-    var clinics = dateToClinic[dayOfWeek][weekNumOfMonth][month % 2][ampm[a]]
-    var summary = summarizeResidentStaffing(clinics, res)
-    Logger.log("Templated staffing: ")
-    Logger.log(summary)
-
-    // Now convert the resident rotations to names
-    resNames = []
-    resNamesMatchedClinics = []
-    for (var i = 0; i < res.length; i++) {
-      tmpResNames = getResidentForRotationAndDate(res[i], d)
-      for (var j = 0; j < tmpResNames.length; j++) {
-        if (clinics[i] == "<RESIDENT>") {
-          resNames.push(tmpResNames[j])
-          resNamesMatchedClinics.push(tmpResNames[j])
-        } else {
-          resNames.push(tmpResNames[j])
-          resNamesMatchedClinics.push(clinics[i])
+      // Now convert the resident rotations to names
+      resNames = []
+      resNamesMatchedClinics = []
+      for (var i = 0; i < res.length; i++) {
+        tmpResNames = getResidentForRotationAndDate(res[i], d)
+        for (var j = 0; j < tmpResNames.length; j++) {
+          if (clinics[i] == "<RESIDENT>") {
+            resNames.push(tmpResNames[j])
+            resNamesMatchedClinics.push(tmpResNames[j])
+          } else {
+            resNames.push(tmpResNames[j])
+            resNamesMatchedClinics.push(clinics[i])
+          }
         }
       }
-    }
 
-    var expectedResidentStaffing = summarizeResidentStaffing(resNamesMatchedClinics, resNames)
+      var expectedResidentStaffing = summarizeResidentStaffing(resNamesMatchedClinics, resNames)
 
-    Logger.log("Expected staffing: ")
-    Logger.log(expectedResidentStaffing)
+      Logger.log("Expected staffing: ")
+      Logger.log(expectedResidentStaffing)
 
-    // now check vacations and manual override
-    residentMissingNames = []
-    residentMissingClinics = []
-    for (var i = 0; i < resNames.length; i++) {
-      if (isResidentOnLeave(resNames[i], d)) {
-        residentMissingNames.push(resNames[i])
-        residentMissingClinics.push(resNamesMatchedClinics[i])
+      // now check vacations and manual override
+      residentMissingNames = []
+      residentMissingClinics = []
+      for (var i = 0; i < resNames.length; i++) {
+        if (isResidentOnLeave(resNames[i], d)) {
+          residentMissingNames.push(resNames[i])
+          residentMissingClinics.push(resNamesMatchedClinics[i])
+        }
       }
-    }
 
-    Logger.log("Residents missing vacation: " + residentMissingNames)
+      Logger.log("Residents missing vacation: " + residentMissingNames)
 
-    var overrideAssignments = getAllOverrideAssignments(d, ampm[a])
-    var overrideResidentNames = []
-    var overrideClinicNames = []
-    for (var i = 0; i < overrideAssignments.length; i++) {
-      overrideResidentNames.push(overrideAssignments[i][OVER_RES_COL])
-      overrideClinicNames.push(overrideAssignments[i][OVER_ASSIGN_COL])
-    }
-    Logger.log("Override assignments: ")
-    Logger.log(overrideAssignments)
-    Logger.log(overrideResidentNames)
-
-    // remove overridden residents
-    for (var i = 0; i < resNames.length; i++) {
-      if (overrideResidentNames.includes(resNames[i])) {
-        residentMissingNames.push(resNames[i])
-        residentMissingClinics.push(resNamesMatchedClinics[i])
+      var overrideAssignments = getAllOverrideAssignments(d, ampm[a])
+      var overrideResidentNames = []
+      var overrideClinicNames = []
+      for (var i = 0; i < overrideAssignments.length; i++) {
+        overrideResidentNames.push(overrideAssignments[i][OVER_RES_COL])
+        overrideClinicNames.push(overrideAssignments[i][OVER_ASSIGN_COL])
       }
-    }
+      Logger.log("Override assignments: ")
+      Logger.log(overrideAssignments)
+      Logger.log(overrideResidentNames)
 
-    Logger.log("Residents missing: " + residentMissingNames)
-
-    // capture a final list of all residents present and staffing for clinics
-    var residentPresentNames = []
-    var residentPresentClinics = []
-    for (var i = 0; i < resNames.length; i++) {
-      if (!residentMissingNames.includes(resNames[i])) {
-        residentPresentNames.push(resNames[i])
-        residentPresentClinics.push(resNamesMatchedClinics[i])
-
-        scheduleDataOut.push([cloneDate(d), ampm[a], resNames[i], resNamesMatchedClinics[i], 'no'])
+      // remove overridden residents
+      for (var i = 0; i < resNames.length; i++) {
+        if (overrideResidentNames.includes(resNames[i])) {
+          residentMissingNames.push(resNames[i])
+          residentMissingClinics.push(resNamesMatchedClinics[i])
+        }
       }
-    }
 
-    // add back override assignments to present residents
-    for (var i = 0; i < overrideAssignments.length; i++) {
-      var tmpOverrideRes = overrideAssignments[i][OVER_RES_COL]
-      var tmpOverrideClinic = overrideAssignments[i][OVER_ASSIGN_COL]
+      Logger.log("Residents missing: " + residentMissingNames)
 
-      residentPresentNames.push(tmpOverrideRes)
-      residentPresentClinics.push(tmpOverrideClinic)
+      // capture a final list of all residents present and staffing for clinics
+      var residentPresentNames = []
+      var residentPresentClinics = []
+      for (var i = 0; i < resNames.length; i++) {
+        if (!residentMissingNames.includes(resNames[i])) {
+          residentPresentNames.push(resNames[i])
+          residentPresentClinics.push(resNamesMatchedClinics[i])
 
-      scheduleDataOut.push([cloneDate(d), ampm[a], tmpOverrideRes, tmpOverrideClinic, 'yes'])
-    }
+          scheduleDataOut.push([cloneDate(d), ampm[a], resNames[i], resNamesMatchedClinics[i], 'no'])
+        }
+      }
 
-    var residentPresentSummary = summarizeResidentStaffing(residentPresentClinics, residentPresentNames)
-    var [diffNum, diffNames] = diffStaffingSummary(expectedResidentStaffing, residentPresentSummary)
+      // add back override assignments to present residents
+      for (var i = 0; i < overrideAssignments.length; i++) {
+        var tmpOverrideRes = overrideAssignments[i][OVER_RES_COL]
+        var tmpOverrideClinic = overrideAssignments[i][OVER_ASSIGN_COL]
 
-    Logger.log("Downbooking required : ")
-    Logger.log(diffNum)
-    Logger.log("Summary of Differences: ")
-    Logger.log(diffNames)
+        residentPresentNames.push(tmpOverrideRes)
+        residentPresentClinics.push(tmpOverrideClinic)
 
-    // Downbooking Required
-    var downbookClinics = Object.keys(diffNum)
-    for (var i = 0; i < downbookClinics.length; i++) {
-      blockOut.push([
-        cloneDate(d), ampm[a], downbookClinics[i], 
-        diffNum[downbookClinics[i]],
-        JSON.stringify(diffNames[downbookClinics[i]])
-      ])
+        scheduleDataOut.push([cloneDate(d), ampm[a], tmpOverrideRes, tmpOverrideClinic, 'yes'])
+      }
+
+      var residentPresentSummary = summarizeResidentStaffing(residentPresentClinics, residentPresentNames)
+      var [diffNum, diffNames] = diffStaffingSummary(expectedResidentStaffing, residentPresentSummary)
+
+      Logger.log("Downbooking required : ")
+      Logger.log(diffNum)
+      Logger.log("Summary of Differences: ")
+      Logger.log(diffNames)
+
+      // Downbooking Required
+      var downbookClinics = Object.keys(diffNum)
+      for (var i = 0; i < downbookClinics.length; i++) {
+        blockOut.push([
+          cloneDate(d), ampm[a], downbookClinics[i], 
+          diffNum[downbookClinics[i]],
+          JSON.stringify(diffNames[downbookClinics[i]], null)
+        ])
+      }
     }
   }
 
