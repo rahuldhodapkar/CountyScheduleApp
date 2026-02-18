@@ -24,6 +24,7 @@ var schedulesData = ss.getSheetByName("Clinic Schedule DATA").getDataRange().get
 var residentRotationData = ss.getSheetByName("Rotation Assignments DATA").getDataRange().getValues();
 var vacationData = ss.getSheetByName("Vacation Lookup DATA").getDataRange().getValues();
 var overrideData = ss.getSheetByName("Assignment Override DATA").getDataRange().getValues();
+var holidayData = ss.getSheetByName("Holiday Lookup DATA").getDataRange().getValues();
 
 // *** OUTPUT SHEETS ***
 var blockOutputSheet = ss.getSheetByName("Block Schedule GEN")
@@ -55,6 +56,10 @@ VAC_RES_COL = 0
 VAC_PGY_COL = 1
 VAC_START_COL = 3
 VAC_END_COL = 4
+
+// holiday headers
+HOL_NAME = 0
+HOL_DATE = 1
 
 // override headers
 OVER_RES_COL = 0
@@ -133,6 +138,15 @@ for (var i = 1; i < schedulesData.length; i++) {
     }
   }
 }
+
+
+dateToHoliday = {}
+for (var i = 1; i < holidayData.length; i++) {
+  Logger.log("===== Registering Holiday (" + holidayData[i][HOL_NAME] + " =====")
+  dateToHoliday[holidayData[i][HOL_DATE]] = holidayData[i][HOL_NAME]
+}
+
+
 
 /**
  * Given a rotation and a date, return the resident names on rotation
@@ -233,6 +247,14 @@ function cloneDate(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+function isWeekend(d) {
+  return (d.getDay() == 0 || d.getDay() == 6)
+}
+
+function isHoliday(d) {
+  return d in dateToHoliday
+}
+
 
 //////////////////////////////////////////////////////////////////////
 // RUN LOGIC
@@ -246,7 +268,7 @@ function checkDates() {
   ]
 
   scheduleDataOut = [
-    ["Date", "AM/PM", "Resident", "Clinic", "isOverride"]
+    ["Date", "AM/PM", "Resident", "Clinic", "isOverride", "isWeekend", "isHoliday"]
   ]
 
   var startDate = new Date("2026-06-30T00:00:00");
@@ -292,6 +314,22 @@ function checkDates() {
             resNamesMatchedClinics.push(clinics[i])
           }
         }
+      }
+
+      if (d in dateToHoliday) {
+        Logger.log("***THIS IS A HOLIDAY***")
+        // Remove all staffing except <SENIOR> and <CONSULT>
+        tmpResNames = []
+        tmpResNamesMatchedClinics = []
+        const re = /(<SENIOR>)|(<CONSULT>)/;
+        for (var i = 0; i < resNames.length; i++) {
+          if (re.test(resNamesMatchedClinics[i])) {
+            tmpResNames.push(resNames[i])
+            tmpResNamesMatchedClinics.push(resNamesMatchedClinics[i])
+          }
+        }
+        resNames = tmpResNames;
+        resNamesMatchedClinics = tmpResNamesMatchedClinics
       }
 
       var expectedResidentStaffing = summarizeResidentStaffing(resNamesMatchedClinics, resNames)
@@ -340,7 +378,7 @@ function checkDates() {
           residentPresentNames.push(resNames[i])
           residentPresentClinics.push(resNamesMatchedClinics[i])
 
-          scheduleDataOut.push([cloneDate(d), ampm[a], resNames[i], resNamesMatchedClinics[i], 'no'])
+          scheduleDataOut.push([cloneDate(d), ampm[a], resNames[i], resNamesMatchedClinics[i], 'no', isWeekend(d), isHoliday(d)])
         }
       }
 
@@ -352,7 +390,7 @@ function checkDates() {
         residentPresentNames.push(tmpOverrideRes)
         residentPresentClinics.push(tmpOverrideClinic)
 
-        scheduleDataOut.push([cloneDate(d), ampm[a], tmpOverrideRes, tmpOverrideClinic, 'yes'])
+        scheduleDataOut.push([cloneDate(d), ampm[a], tmpOverrideRes, tmpOverrideClinic, 'yes', isWeekend(d), isHoliday(d)])
       }
 
       var residentPresentSummary = summarizeResidentStaffing(residentPresentClinics, residentPresentNames)
