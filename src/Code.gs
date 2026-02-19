@@ -67,6 +67,12 @@ OVER_DATE_COL = 1
 OVER_AMPM_COL = 2
 OVER_ASSIGN_COL = 3
 
+// assignment output
+ASSIGN_OUT_DATE_COL = 0
+ASSIGN_AMPM_COL = 1
+ASSIGN_OUT_RES_COL = 2
+ASSIGN_OUT_ASSIGNMENT_COL = 3
+
 //////////////////////////////////////////////////////////////////////
 // DEFINE UTILITY FUNCTIONS
 //////////////////////////////////////////////////////////////////////
@@ -243,6 +249,9 @@ function diffStaffingSummary(expected, actual) {
   return [diffNum, diffNames]  
 }
 
+/**
+ * Helper function to persist dates 
+ */
 function cloneDate(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -251,8 +260,31 @@ function isWeekend(d) {
   return (d.getDay() == 0 || d.getDay() == 6)
 }
 
+/**
+ * Holiday lookup is based on standard LAG holiday list
+ */
 function isHoliday(d) {
   return d in dateToHoliday
+}
+
+/**
+ * 
+ */
+function isResidentPostCall(residentName, d, scheduleData) {
+  var dayPrior = new Date(d.getTime())
+  dayPrior.setDate(d.getDate() - 1)
+  var isPostCall = false
+
+  for (var i = 0; i < scheduleData.length; i++) {
+    if (scheduleData[i][ASSIGN_OUT_ASSIGNMENT_COL] == "<CONSULT>" &&
+        scheduleData[i][ASSIGN_OUT_RES_COL] == residentName &&
+        scheduleData[i][ASSIGN_AMPM_COL] == 'pm' &&
+        datesEqual(new Date(scheduleData[i][ASSIGN_OUT_DATE_COL]), dayPrior)) {
+      isPostCall = true
+    }
+  }
+
+  return isPostCall
 }
 
 
@@ -337,11 +369,11 @@ function checkDates() {
       //Logger.log("Expected staffing: ")
       //Logger.log(expectedResidentStaffing)
 
-      // now check vacations and manual override
+      // now check vacations, post-call. and manual override
       residentMissingNames = []
       residentMissingClinics = []
       for (var i = 0; i < resNames.length; i++) {
-        if (isResidentOnLeave(resNames[i], d)) {
+        if (isResidentOnLeave(resNames[i], d) || isResidentPostCall(resNames[i], d, scheduleDataOut)) {
           residentMissingNames.push(resNames[i])
           residentMissingClinics.push(resNamesMatchedClinics[i])
         }
