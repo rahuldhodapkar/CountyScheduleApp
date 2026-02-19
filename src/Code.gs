@@ -385,8 +385,9 @@ function checkDates() {
       var overrideResidentNames = []
       var overrideClinicNames = []
       for (var i = 0; i < overrideAssignments.length; i++) {
-        if (a == 'pm' && (overrideAssignments[i] == "<SENIOR>" 
-                          || overrideAssignments[i] == "<CONSULT>")) { continue } // EXCLUDE these overrides
+        if ((overrideAssignments[i][OVER_AMPM_COL] == 'pm')
+            && (overrideAssignments[i][OVER_ASSIGN_COL] == "<SENIOR>" 
+                || overrideAssignments[i][OVER_ASSIGN_COL] == "<CONSULT>")) { continue } // EXCLUDE these overrides
 
         overrideResidentNames.push(overrideAssignments[i][OVER_RES_COL])
         overrideClinicNames.push(overrideAssignments[i][OVER_ASSIGN_COL])
