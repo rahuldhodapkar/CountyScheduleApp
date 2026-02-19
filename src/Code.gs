@@ -382,15 +382,17 @@ function checkDates() {
       //Logger.log("Residents missing vacation: " + residentMissingNames)
 
       var overrideAssignments = getAllOverrideAssignments(d, ampm[a])
-      var overrideResidentNames = []
-      var overrideClinicNames = []
+      var overrideResidentNamesToRemove = []
+      var overrideClinicNamesToRemove = []
       for (var i = 0; i < overrideAssignments.length; i++) {
         if ((overrideAssignments[i][OVER_AMPM_COL] == 'pm')
             && (overrideAssignments[i][OVER_ASSIGN_COL] == "<SENIOR>" 
-                || overrideAssignments[i][OVER_ASSIGN_COL] == "<CONSULT>")) { continue } // EXCLUDE these overrides
-
-        overrideResidentNames.push(overrideAssignments[i][OVER_RES_COL])
-        overrideClinicNames.push(overrideAssignments[i][OVER_ASSIGN_COL])
+                || overrideAssignments[i][OVER_ASSIGN_COL] == "<CONSULT>")) { 
+          continue // EXCLUDE these overrides for missing resident removal
+                   // i.e. residents may be SENIOR or CONSULT and still have a full day schedule
+        }
+        overrideResidentNamesToRemove.push(overrideAssignments[i][OVER_RES_COL])
+        overrideClinicNamesToRemove.push(overrideAssignments[i][OVER_ASSIGN_COL])
       }
       //Logger.log("Override assignments: ")
       //Logger.log(overrideAssignments)
@@ -398,7 +400,7 @@ function checkDates() {
 
       // remove overridden residents
       for (var i = 0; i < resNames.length; i++) {
-        if (overrideResidentNames.includes(resNames[i])) {
+        if (overrideResidentNamesToRemove.includes(resNames[i])) {
           residentMissingNames.push(resNames[i])
           residentMissingClinics.push(resNamesMatchedClinics[i])
         }
@@ -416,6 +418,13 @@ function checkDates() {
 
           scheduleDataOut.push([cloneDate(d), ampm[a], resNames[i], resNamesMatchedClinics[i], 'no', isWeekend(d), isHoliday(d)])
         }
+      }
+
+      var overrideResidentNames = []
+      var overrideClinicNames = []
+      for (var i = 0; i < overrideAssignments.length; i++) {
+        overrideResidentNames.push(overrideAssignments[i][OVER_RES_COL])
+        overrideClinicNames.push(overrideAssignments[i][OVER_ASSIGN_COL])
       }
 
       // add back override assignments to present residents
