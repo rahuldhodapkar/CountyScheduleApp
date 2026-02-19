@@ -193,7 +193,7 @@ function getAllOverrideAssignments(date, ampm) {
 
     if (datesEqual(new Date(overrideData[i][OVER_DATE_COL]),date)
         && (ampm === String(overrideData[i][OVER_AMPM_COL])
-            || ampm in String(overrideData[i][OVER_AMPM_COL]).split(","))) {
+            || String(overrideData[i][OVER_AMPM_COL]).split(",").includes(ampm))) {
       assignments.push(overrideData[i])
     }
   }
@@ -389,7 +389,7 @@ function checkDates() {
             && (overrideAssignments[i][OVER_ASSIGN_COL] == "<SENIOR>" 
                 || overrideAssignments[i][OVER_ASSIGN_COL] == "<CONSULT>")) { 
           continue // EXCLUDE these overrides for missing resident removal
-                   // i.e. residents may be SENIOR or CONSULT and still have a full day schedule
+                   // i.e. residents may be SENIOR or CONSULT pm and still have a full day schedule
         }
         overrideResidentNamesToRemove.push(overrideAssignments[i][OVER_RES_COL])
         overrideClinicNamesToRemove.push(overrideAssignments[i][OVER_ASSIGN_COL])
@@ -426,6 +426,11 @@ function checkDates() {
         overrideResidentNames.push(overrideAssignments[i][OVER_RES_COL])
         overrideClinicNames.push(overrideAssignments[i][OVER_ASSIGN_COL])
       }
+
+      // Logger.log("Override Res Names:")
+      // Logger.log(overrideResidentNames)
+      // Logger.log("Override Clinic Names:")
+      // Logger.log(overrideClinicNames)
 
       // add back override assignments to present residents
       for (var i = 0; i < overrideAssignments.length; i++) {
