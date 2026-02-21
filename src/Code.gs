@@ -73,6 +73,16 @@ ASSIGN_AMPM_COL = 1
 ASSIGN_OUT_RES_COL = 2
 ASSIGN_OUT_ASSIGNMENT_COL = 3
 
+// defined assignments with specific staffing requirements
+ASSIGN_TO_STAFF_REQUIRED_MAP = {
+  "OR 10 (Cataract)": {"am": 1, "pm": 1},
+  "OR 16 (Cataract)": {"am": 1, "pm": 1},
+  "OR MLK (Cataract)": {"am": 1, "pm": 1},
+  "<SENIOR>": {"am": 0, "pm": 1},
+  "<CHIEF>": {"am": 1, "pm": 1},
+  "<CONSULT>": {"am": 1, "pm": 1},
+}
+
 //////////////////////////////////////////////////////////////////////
 // DEFINE UTILITY FUNCTIONS
 //////////////////////////////////////////////////////////////////////
@@ -454,6 +464,13 @@ function checkDates() {
       // Downbooking Required
       var downbookClinics = Object.keys(diffNum)
       for (var i = 0; i < downbookClinics.length; i++) {
+        if (downbookClinics[i] in ASSIGN_TO_STAFF_REQUIRED_MAP
+            && diffNames[downbookClinics[i]]['actual'].length
+               >= ASSIGN_TO_STAFF_REQUIRED_MAP[downbookClinics[i]][ampm[a]]) {
+          // this indicates sufficient staffing for this clinic
+          continue
+        }
+
         blockOut.push([
           cloneDate(d), ampm[a], downbookClinics[i], 
           diffNum[downbookClinics[i]],
