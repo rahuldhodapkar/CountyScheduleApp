@@ -75,12 +75,12 @@ ASSIGN_OUT_ASSIGNMENT_COL = 3
 
 // defined assignments with specific staffing requirements
 ASSIGN_TO_STAFF_REQUIRED_MAP = {
-  "OR 10 (Cataract)": {"am": 1, "pm": 1},
-  "OR 16 (Cataract)": {"am": 1, "pm": 1},
-  "OR MLK (Cataract)": {"am": 1, "pm": 1},
-  "<SENIOR>": {"am": 0, "pm": 1},
-  "<CHIEF>": {"am": 1, "pm": 1},
-  "<CONSULT>": {"am": 1, "pm": 1},
+  "OR 10 (Cataract)": {"am": 1, "pm": 1, "night": 0},
+  "OR 16 (Cataract)": {"am": 1, "pm": 1, "night": 0},
+  "OR MLK (Cataract)": {"am": 1, "pm": 1, "night": 0},
+  "<SENIOR>": {"am": 0, "pm": 0, "night": 1},
+  "<CHIEF>": {"am": 1, "pm": 1, "night": 0},
+  "<CONSULT>": {"am": 1, "pm": 1, "night": 1},
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -288,7 +288,7 @@ function isResidentPostCall(residentName, d, scheduleData) {
   for (var i = 0; i < scheduleData.length; i++) {
     if (scheduleData[i][ASSIGN_OUT_ASSIGNMENT_COL] == "<CONSULT>" &&
         scheduleData[i][ASSIGN_OUT_RES_COL] == residentName &&
-        scheduleData[i][ASSIGN_AMPM_COL] == 'pm' &&
+        scheduleData[i][ASSIGN_AMPM_COL] == 'night' &&
         datesEqual(new Date(scheduleData[i][ASSIGN_OUT_DATE_COL]), dayPrior)) {
       isPostCall = true
     }
@@ -334,7 +334,7 @@ function checkDates() {
     // identify clinics on date, resident codes for date
     ////////////////////////////////////////////////////
 
-    var ampm = ['am', 'pm']
+    var ampm = ['am', 'pm', 'night']
     for (var a = 0; a < ampm.length; a++) {
       var res = dateToResident[dayOfWeek][weekNumOfMonth][month % 2][ampm[a]]
       var clinics = dateToClinic[dayOfWeek][weekNumOfMonth][month % 2][ampm[a]]
