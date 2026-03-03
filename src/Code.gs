@@ -30,6 +30,9 @@ var holidayData = ss.getSheetByName("Holiday Lookup DATA").getDataRange().getVal
 var blockOutputSheet = ss.getSheetByName("Block Schedule GEN")
 blockOutputSheet.clear() // ***DANGEROUS COMMAND***
 
+var unblockOutputSheet = ss.getSheetByName("Unblock Schedule GEN")
+unblockOutputSheet.clear() // ***DANGEROUS COMMAND***
+
 var adjustedAssignmentsOutputSheet = ss.getSheetByName("Adjusted Assignments GEN")
 adjustedAssignmentsOutputSheet.clear() // ***DANGEROUS COMMAND***
 
@@ -236,18 +239,29 @@ function summarizeResidentStaffing(clinics, residents) {
 function diffStaffingSummary(expected, actual) {
   var diffNum = {}
   var diffNames = {}
-  
-  var expectedClinics = Object.keys(expected)
+
+  var expectedClinics = Array.from(new Set(Object.keys(expected).concat(Object.keys(actual))))
+
+  //Logger.log("expected clinics:")
+  //Logger.log(expectedClinics)
+
   for (var i = 0; i < expectedClinics.length; i++) {
     var k = expectedClinics[i]
-    var expectedNum = expected[k].length
+    var expectedNum = 0
+    if (k in expected) { 
+      expectedNum = expected[k].length
+    } else {
+      expected[k] = []
+    }
+    
     var actualNum = 0
     if (k in actual) { 
       actualNum = actual[k].length
     } else {
       actual[k] = []
     }
-    if (expectedNum > actualNum) { // if there is not enough staffing
+
+    if (expectedNum != actualNum) { // if there is not the expected amount of staffing
       diffNum[k] = expectedNum - actualNum
       diffNames[k] = {
         "expected": expected[k],
@@ -307,6 +321,10 @@ function checkDates() {
   // template for clinic blocking
   blockOut = [
     ["Date", "AM/PM", "ClinicToBlock", "Expected - Actual", "Diff Summary"]
+  ]
+
+  unblockOut = [
+    ["Date", "AM/PM", "ClinicToUnblock", "Expected - Actual", "Diff Summary"]
   ]
 
   scheduleDataOut = [
@@ -456,12 +474,16 @@ function checkDates() {
       var residentPresentSummary = summarizeResidentStaffing(residentPresentClinics, residentPresentNames)
       var [diffNum, diffNames] = diffStaffingSummary(expectedResidentStaffing, residentPresentSummary)
 
+      //Logger.log("Residents present:")
+      //Logger.log(residentPresentSummary)
+
       //Logger.log("Downbooking required : ")
       //Logger.log(diffNum)
       //Logger.log("Summary of Differences: ")
       //Logger.log(diffNames)
 
       // Downbooking Required
+      // ***NOTE*** this code assumes that object keys are order-preserving, does not work with older ECMAscript version
       var downbookClinics = Object.keys(diffNum)
       for (var i = 0; i < downbookClinics.length; i++) {
         if (downbookClinics[i] in ASSIGN_TO_STAFF_REQUIRED_MAP
@@ -471,18 +493,51 @@ function checkDates() {
           continue
         }
 
+        if (diffNum[downbookClinics[i]] < 0) {
+          continue // indicates overstaffed clinic, ignore
+        } 
+
         blockOut.push([
           cloneDate(d), ampm[a], downbookClinics[i], 
           diffNum[downbookClinics[i]],
           JSON.stringify(diffNames[downbookClinics[i]], null)
         ])
       }
+
+      // Overstaffed clinics to "unblock"
+      var unblockClinics = Object.keys(diffNum)
+      for (var i = 0; i < unblockClinics.length; i++) {
+        if (unblockClinics[i] in ASSIGN_TO_STAFF_REQUIRED_MAP
+            && diffNames[unblockClinics[i]]['actual'].length
+               >= ASSIGN_TO_STAFF_REQUIRED_MAP[unblockClinics[i]][ampm[a]]) {
+          // this indicates sufficient staffing for this clinic
+          continue
+        }
+
+        if (diffNum[unblockClinics[i]] > 0) {
+          continue // indicates understaffed clinic, ignore
+        }
+
+        if (unblockClinics[i] == "<NULL>") {
+          continue // do not unblock the "null" assignment
+        }
+
+        unblockOut.push([
+          cloneDate(d), ampm[a], unblockClinics[i], 
+          diffNum[unblockClinics[i]],
+          JSON.stringify(diffNames[unblockClinics[i]], null)
+        ])
+      }
+
     }
   }
 
   // write full adjusted schedule data for later inspection
-  adjustedAssignmentsOutputSheet.getRange(1,1,scheduleDataOut.length, scheduleDataOut[0].length).setValues(scheduleDataOut)
+  adjustedAssignmentsOutputSheet.getRange(1, 1, scheduleDataOut.length, scheduleDataOut[0].length).setValues(scheduleDataOut)
 
   // write full block requirements data for later inspection
-  blockOutputSheet.getRange(1,1,blockOut.length, blockOut[0].length).setValues(blockOut)
+  blockOutputSheet.getRange(1, 1, blockOut.length, blockOut[0].length).setValues(blockOut)
+
+  // write full unblock requirements data for later inspection
+  unblockOutputSheet.getRange(1, 1, unblockOut.length, unblockOut[0].length).setValues(unblockOut)
 }
